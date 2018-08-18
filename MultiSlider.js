@@ -124,15 +124,12 @@ export default class MultiSlider extends React.Component {
     }
 
     componentWillReceiveProps(nextProps) {
-        if (this.state.onePressed || this.state.twoPressed) {
-            return;
-        }
-
         let nextState = {};
         if (
             nextProps.min !== this.props.min ||
             nextProps.max !== this.props.max ||
             nextProps.values[0] !== this.state.valueOne ||
+            nextProps.step !== this.props.step ||
             nextProps.sliderLength !== this.props.sliderLength ||
             nextProps.values[1] !== this.state.valueTwo ||
             (nextProps.sliderLength !== this.props.sliderLength && nextProps.values[1])
@@ -141,15 +138,19 @@ export default class MultiSlider extends React.Component {
 
             this.stepLength = this.props.sliderLength / this.optionsArray.length;
 
-            const positionOne = valueToPosition(nextProps.values[0], this.optionsArray, nextProps.sliderLength);
             nextState.valueOne = nextProps.values[0];
-            nextState.pastOne = positionOne;
-            nextState.positionOne = positionOne;
+            nextState.positionOne = valueToPosition(nextState.valueOne, this.optionsArray, nextProps.sliderLength);
+            const positionOneShift = nextState.positionOne - this.state.positionOne;
+            nextState.pastOne = this.state.onePressed ? this.state.pastOne + positionOneShift : nextState.positionOne;
 
-            const positionTwo = valueToPosition(nextProps.values[1], this.optionsArray, nextProps.sliderLength);
-            nextState.valueTwo = nextProps.values[1];
-            nextState.pastTwo = positionTwo;
-            nextState.positionTwo = positionTwo;
+            if (nextProps.values.length === 2) {
+                nextState.valueTwo = nextProps.values[1];
+                nextState.positionTwo = valueToPosition(nextProps.values[1], this.optionsArray, nextProps.sliderLength);
+                const positionTwoShift = nextState.positionTwo - this.state.positionTwo;
+                nextState.pastTwo = this.state.twoPressed
+                    ? this.state.pastTwo + positionTwoShift
+                    : nextState.positionTwo;
+            }
         }
 
         if (nextState != {}) {

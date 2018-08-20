@@ -124,7 +124,6 @@ export default class MultiSlider extends React.Component {
     }
 
     componentWillReceiveProps(nextProps) {
-        let nextState = {};
         if (
             nextProps.min !== this.props.min ||
             nextProps.max !== this.props.max ||
@@ -134,6 +133,8 @@ export default class MultiSlider extends React.Component {
             nextProps.values[1] !== this.state.valueTwo ||
             (nextProps.sliderLength !== this.props.sliderLength && nextProps.values[1])
         ) {
+            let nextState = {};
+
             this.optionsArray = this.props.optionsArray || createArray(nextProps.min, nextProps.max, nextProps.step);
 
             this.stepLength = this.props.sliderLength / this.optionsArray.length;
@@ -151,9 +152,7 @@ export default class MultiSlider extends React.Component {
                     ? this.state.pastTwo + positionTwoShift
                     : nextState.positionTwo;
             }
-        }
 
-        if (nextState != {}) {
             this.setState(nextState);
         }
     }
@@ -184,18 +183,23 @@ export default class MultiSlider extends React.Component {
         const accumDistance = this.props.vertical ? -gestureState.dy : gestureState.dx;
         const accumDistanceDisplacement = this.props.vertical ? gestureState.dx : gestureState.dy;
 
+        // distance from the past position not accounting for it being outside slider
         const unconfined = I18nManager.isRTL ? this.state.pastOne - accumDistance : accumDistance + this.state.pastOne;
         const bottom = 0;
         const trueTop = this.state.positionTwo - (this.props.allowOverlap ? 0 : this.stepLength);
         const top = trueTop === 0 ? 0 : trueTop || this.props.sliderLength;
+
+        // distance from the past position limited by how much it can change within slider dimensions
         const confined = unconfined < bottom ? bottom : unconfined > top ? top : unconfined;
         const slipDisplacement = this.props.touchDimensions.slipDisplacement;
 
+        // update position and value if touch is within allowed distance from slider
         if (Math.abs(accumDistanceDisplacement) < slipDisplacement || !slipDisplacement) {
             const value = positionToValue(confined, this.optionsArray, this.props.sliderLength);
             const snapped = valueToPosition(value, this.optionsArray, this.props.sliderLength);
+
             this.setState({
-                positionOne: this.props.snapped ? snapped : confined
+                positionOne: this.props.snapped ? snapped : confined // snap button to predefined positions for values or place it freely on slider
             });
 
             if (value !== this.state.valueOne) {

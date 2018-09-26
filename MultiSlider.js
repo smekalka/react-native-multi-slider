@@ -1,9 +1,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import {StyleSheet, PanResponder, View, Platform, I18nManager} from 'react-native';
+import {StyleSheet, PanResponder, View, I18nManager} from 'react-native';
 
 import DefaultMarker from './DefaultMarker';
+import DefaultTrack from './DefaultTrack';
 import {createArray, valueToPosition, positionToValue} from './converters';
 
 const ViewPropTypes = require('react-native').ViewPropTypes || View.propTypes;
@@ -20,6 +21,7 @@ export default class MultiSlider extends React.Component {
         touchDimensions: PropTypes.object,
 
         customMarker: PropTypes.func,
+        customTrack: PropTypes.func,
 
         customMarkerLeft: PropTypes.func,
         customMarkerRight: PropTypes.func,
@@ -38,16 +40,21 @@ export default class MultiSlider extends React.Component {
         markerContainerStyle: ViewPropTypes.style,
         markerStyle: ViewPropTypes.style,
         pressedMarkerStyle: ViewPropTypes.style,
+
         valuePrefix: PropTypes.string,
         valueSuffix: PropTypes.string,
+
         enabledOne: PropTypes.bool,
         enabledTwo: PropTypes.bool,
+
         onToggleOne: PropTypes.func,
         onToggleTwo: PropTypes.func,
-        allowOverlap: PropTypes.bool,
-        snapped: PropTypes.bool,
+
         markerOffsetX: PropTypes.number,
         markerOffsetY: PropTypes.number,
+
+        allowOverlap: PropTypes.bool,
+        snapped: PropTypes.bool,
         vertical: PropTypes.bool
     };
 
@@ -65,10 +72,12 @@ export default class MultiSlider extends React.Component {
             borderRadius: 15,
             slipDisplacement: 200
         },
-        customMarker: DefaultMarker,
 
+        customMarker: DefaultMarker,
         customMarkerLeft: DefaultMarker,
         customMarkerRight: DefaultMarker,
+
+        customTrack: DefaultTrack,
 
         markerOffsetX: 0,
         markerOffsetY: 0,
@@ -294,19 +303,15 @@ export default class MultiSlider extends React.Component {
 
     render() {
         const {positionOne, positionTwo} = this.state;
-        const {selectedStyle, unselectedStyle, sliderLength, markerOffsetX, markerOffsetY} = this.props;
+        const {sliderLength, markerOffsetX, markerOffsetY} = this.props;
         const twoMarkers = this.props.values.length == 2; // when allowOverlap, positionTwo could be 0, identified as string '0' and throwing 'RawText 0 needs to be wrapped in <Text>' error
 
-        const trackOneLength = positionOne;
-        const trackOneStyle = twoMarkers ? unselectedStyle : selectedStyle || styles.selectedTrack;
-        const trackThreeLength = twoMarkers ? sliderLength - positionTwo : 0;
-        const trackThreeStyle = unselectedStyle;
-        const trackTwoLength = sliderLength - trackOneLength - trackThreeLength;
-        const trackTwoStyle = twoMarkers ? selectedStyle || styles.selectedTrack : unselectedStyle;
         const Marker = this.props.customMarker;
-
         const MarkerLeft = this.props.customMarkerLeft;
         const MarkerRight = this.props.customMarkerRight;
+
+        const Track = this.props.customTrack;
+
         const isMarkersSeparated = this.props.isMarkersSeparated || false;
 
         const {borderRadius} = this.props.touchDimensions;
@@ -314,9 +319,8 @@ export default class MultiSlider extends React.Component {
             borderRadius: borderRadius || 0
         };
 
-        const markerContainerOne = {top: markerOffsetY - 24, left: trackOneLength + markerOffsetX - 24};
-
-        const markerContainerTwo = {top: markerOffsetY - 24, right: trackThreeLength + markerOffsetX - 24};
+        const markerContainerOne = {top: markerOffsetY - 24, left: positionOne + markerOffsetX - 24};
+        const markerContainerTwo = {top: markerOffsetY - 24, left: positionTwo + markerOffsetX - 24};
 
         const containerStyle = [styles.container, this.props.containerStyle];
 
@@ -328,80 +332,81 @@ export default class MultiSlider extends React.Component {
 
         return (
             <View style={containerStyle}>
-                <View style={[styles.fullTrack, {width: sliderLength}]}>
-                    <View style={[styles.track, this.props.trackStyle, trackOneStyle, {width: trackOneLength}]} />
-                    <View style={[styles.track, this.props.trackStyle, trackTwoStyle, {width: trackTwoLength}]} />
-                    {twoMarkers && (
-                        <View
-                            style={[styles.track, this.props.trackStyle, trackThreeStyle, {width: trackThreeLength}]}
-                        />
-                    )}
+                <Track
+                    positionOne={positionOne}
+                    positionTwo={positionTwo}
+                    sliderLength={sliderLength}
+                    twoMarkers={twoMarkers}
+                    trackStyle={this.props.trackStyle}
+                    selectedStyle={this.props.selectedStyle}
+                    unselectedStyle={this.props.unselectedStyle}
+                />
+                <View
+                    style={[
+                        styles.markerContainer,
+                        markerContainerOne,
+                        this.props.markerContainerStyle,
+                        positionOne > sliderLength / 2 && styles.topMarkerContainer
+                    ]}>
                     <View
-                        style={[
-                            styles.markerContainer,
-                            markerContainerOne,
-                            this.props.markerContainerStyle,
-                            positionOne > sliderLength / 2 && styles.topMarkerContainer
-                        ]}>
-                        <View
-                            style={[styles.touch, touchStyle]}
-                            ref={component => (this._markerOne = component)}
-                            {...this._panResponderOne.panHandlers}>
-                            {isMarkersSeparated === false ? (
-                                <Marker
-                                    enabled={this.props.enabledOne}
-                                    pressed={this.state.onePressed}
-                                    markerStyle={[styles.marker, this.props.markerStyle]}
-                                    pressedMarkerStyle={this.props.pressedMarkerStyle}
-                                    currentValue={this.state.valueOne}
-                                    valuePrefix={this.props.valuePrefix}
-                                    valueSuffix={this.props.valueSuffix}
-                                />
-                            ) : (
-                                <MarkerLeft
-                                    enabled={this.props.enabledOne}
-                                    pressed={this.state.onePressed}
-                                    markerStyle={[styles.marker, this.props.markerStyle]}
-                                    pressedMarkerStyle={this.props.pressedMarkerStyle}
-                                    currentValue={this.state.valueOne}
-                                    valuePrefix={this.props.valuePrefix}
-                                    valueSuffix={this.props.valueSuffix}
-                                />
-                            )}
-                        </View>
-                    </View>
-                    {twoMarkers &&
-                        positionOne !== this.props.sliderLength && (
-                            <View style={[styles.markerContainer, markerContainerTwo, this.props.markerContainerStyle]}>
-                                <View
-                                    style={[styles.touch, touchStyle]}
-                                    ref={component => (this._markerTwo = component)}
-                                    {...this._panResponderTwo.panHandlers}>
-                                    {isMarkersSeparated === false ? (
-                                        <Marker
-                                            pressed={this.state.twoPressed}
-                                            markerStyle={this.props.markerStyle}
-                                            pressedMarkerStyle={this.props.pressedMarkerStyle}
-                                            currentValue={this.state.valueTwo}
-                                            enabled={this.props.enabledTwo}
-                                            valuePrefix={this.props.valuePrefix}
-                                            valueSuffix={this.props.valueSuffix}
-                                        />
-                                    ) : (
-                                        <MarkerRight
-                                            pressed={this.state.twoPressed}
-                                            markerStyle={this.props.markerStyle}
-                                            pressedMarkerStyle={this.props.pressedMarkerStyle}
-                                            currentValue={this.state.valueTwo}
-                                            enabled={this.props.enabledTwo}
-                                            valuePrefix={this.props.valuePrefix}
-                                            valueSuffix={this.props.valueSuffix}
-                                        />
-                                    )}
-                                </View>
-                            </View>
+                        style={[styles.touch, touchStyle]}
+                        ref={component => (this._markerOne = component)}
+                        {...this._panResponderOne.panHandlers}>
+                        {isMarkersSeparated === false ? (
+                            <Marker
+                                enabled={this.props.enabledOne}
+                                pressed={this.state.onePressed}
+                                markerStyle={[styles.marker, this.props.markerStyle]}
+                                pressedMarkerStyle={this.props.pressedMarkerStyle}
+                                currentValue={this.state.valueOne}
+                                valuePrefix={this.props.valuePrefix}
+                                valueSuffix={this.props.valueSuffix}
+                            />
+                        ) : (
+                            <MarkerLeft
+                                enabled={this.props.enabledOne}
+                                pressed={this.state.onePressed}
+                                markerStyle={[styles.marker, this.props.markerStyle]}
+                                pressedMarkerStyle={this.props.pressedMarkerStyle}
+                                currentValue={this.state.valueOne}
+                                valuePrefix={this.props.valuePrefix}
+                                valueSuffix={this.props.valueSuffix}
+                            />
                         )}
+                    </View>
                 </View>
+
+                {twoMarkers &&
+                    positionOne !== this.props.sliderLength && (
+                        <View style={[styles.markerContainer, markerContainerTwo, this.props.markerContainerStyle]}>
+                            <View
+                                style={[styles.touch, touchStyle]}
+                                ref={component => (this._markerTwo = component)}
+                                {...this._panResponderTwo.panHandlers}>
+                                {isMarkersSeparated === false ? (
+                                    <Marker
+                                        pressed={this.state.twoPressed}
+                                        markerStyle={this.props.markerStyle}
+                                        pressedMarkerStyle={this.props.pressedMarkerStyle}
+                                        currentValue={this.state.valueTwo}
+                                        enabled={this.props.enabledTwo}
+                                        valuePrefix={this.props.valuePrefix}
+                                        valueSuffix={this.props.valueSuffix}
+                                    />
+                                ) : (
+                                    <MarkerRight
+                                        pressed={this.state.twoPressed}
+                                        markerStyle={this.props.markerStyle}
+                                        pressedMarkerStyle={this.props.pressedMarkerStyle}
+                                        currentValue={this.state.valueTwo}
+                                        enabled={this.props.enabledTwo}
+                                        valuePrefix={this.props.valuePrefix}
+                                        valueSuffix={this.props.valueSuffix}
+                                    />
+                                )}
+                            </View>
+                        </View>
+                    )}
             </View>
         );
     }
@@ -412,32 +417,6 @@ const styles = StyleSheet.create({
         position: 'relative',
         height: 50,
         justifyContent: 'center'
-    },
-    fullTrack: {
-        flexDirection: 'row'
-    },
-    track: {
-        ...Platform.select({
-            ios: {
-                height: 2,
-                borderRadius: 2,
-                backgroundColor: '#A7A7A7'
-            },
-            android: {
-                height: 2,
-                backgroundColor: '#CECECE'
-            }
-        })
-    },
-    selectedTrack: {
-        ...Platform.select({
-            ios: {
-                backgroundColor: '#095FFF'
-            },
-            android: {
-                backgroundColor: '#0D8675'
-            }
-        })
     },
     markerContainer: {
         position: 'absolute',
@@ -457,3 +436,4 @@ const styles = StyleSheet.create({
         alignSelf: 'stretch'
     }
 });
+

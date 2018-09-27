@@ -1,7 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import {StyleSheet, View, Platform} from 'react-native';
+import {View} from 'react-native';
+import {trackStyles} from './styles';
 
 const ViewPropTypes = require('react-native').ViewPropTypes || View.propTypes;
 
@@ -23,56 +24,28 @@ export default class DefaultTrack extends React.Component {
             positionTwo,
             sliderLength,
             twoMarkers,
+            trackStyle,
             selectedStyle,
             unselectedStyle,
             children
         } = this.props;
 
         const trackOneLength = positionOne;
-        const trackOneStyle = twoMarkers ? unselectedStyle : selectedStyle || styles.selectedTrack;
+        const trackOneStyle = twoMarkers ? unselectedStyle : selectedStyle || trackStyles.selectedTrack;
         const trackThreeLength = twoMarkers ? sliderLength - positionTwo : 0;
         const trackThreeStyle = unselectedStyle;
         const trackTwoLength = sliderLength - trackOneLength - trackThreeLength;
-        const trackTwoStyle = twoMarkers ? selectedStyle || styles.selectedTrack : unselectedStyle;
+        const trackTwoStyle = twoMarkers ? selectedStyle || trackStyles.selectedTrack : unselectedStyle;
 
         return (
-            <View style={[styles.fullTrack, {width: sliderLength}]}>
-                <View style={[styles.track, this.props.trackStyle, trackOneStyle, {width: trackOneLength}]} />
-                <View style={[styles.track, this.props.trackStyle, trackTwoStyle, {width: trackTwoLength}]} />
+            <View style={[trackStyles.fullTrack, {width: sliderLength}]}>
+                <View style={[trackStyles.track, trackStyle, trackOneStyle, {width: trackOneLength}]} />
+                <View style={[trackStyles.track, trackStyle, trackTwoStyle, {width: trackTwoLength}]} />
                 {twoMarkers && (
-                    <View style={[styles.track, this.props.trackStyle, trackThreeStyle, {width: trackThreeLength}]} />
+                    <View style={[trackStyles.track, trackStyle, trackThreeStyle, {width: trackThreeLength}]} />
                 )}
                 {children}
             </View>
         );
     }
 }
-
-const styles = StyleSheet.create({
-    fullTrack: {
-        flexDirection: 'row'
-    },
-    track: {
-        ...Platform.select({
-            ios: {
-                height: 2,
-                borderRadius: 2,
-                backgroundColor: '#A7A7A7'
-            },
-            android: {
-                height: 2,
-                backgroundColor: '#CECECE'
-            }
-        })
-    },
-    selectedTrack: {
-        ...Platform.select({
-            ios: {
-                backgroundColor: '#095FFF'
-            },
-            android: {
-                backgroundColor: '#0D8675'
-            }
-        })
-    }
-});
